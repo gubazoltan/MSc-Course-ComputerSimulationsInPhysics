@@ -1,0 +1,16 @@
+Short documentation of the blackjack.py code. 
+
+The code uses two main objects, the Box and the Deck.
+
+A Box object corresponds to a player playing Black Jack. That is, it includes a bet, two cards and other useful information about the cards (natural, doubles, splitted etc).
+A Deck object corresponds to the deck of cards the dealer uses during the game and from which the Boxes get their cards. There is no need to use multiple Deck objects, one global Deck object can be used to simulate several games of Black Jack. 
+
+The main functions of the code are 
+- create_game: sets up the scene for the game; creates Boxes for the players, give cards to the dealer and the Boxes
+- play_game: carries out the simulation of a game of Black Jack, where the player follows a well defined strategy. 
+
+The strategies used in the simulation try to mimic the optimal strategy based on the source 
+https://www.blackjackapprenticeship.com/blackjack-strategy-charts/ .
+
+The algorithm used to shuffle the cards is motivated by the one introduced in
+https://www.geeksforgeeks.org/shuffle-a-deck-of-cards-3/ .
