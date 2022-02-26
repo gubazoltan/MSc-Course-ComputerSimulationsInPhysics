@@ -1,0 +1,34 @@
+Short documentation for the angular_correlations.py code.
+
+The code uses two main objects, the Bucket and the Lattice.
+
+A Bucket is a container of particles that are isolated to a well defined region of space. particles corresponding to Bucket i,j have coordinates:
+i*d <= x < (i+1)*d,
+j*d <= y < (j+1)*d,
+where d is the "lattice constant" of the system. 
+
+A Lattice contains all the particles of the system, sorted into a matrix of Buckets, depending on the coordinates. A Lattice is created by defining the 
+file containing the positions of the particles. With the creation of a Lattice object the particles automatically get filled into the corresponding Buckets. 
+
+The main function of the Lattice object is the Lattice.angular_correlation function, which without any further input, calculates the angular distribution of the particles in the Lattice. 
+This calculation utilizes the Bucketing algorithm, hence the name of the Bucket object. The output of this function is a list that contains the calculated angles.
+This data then can be visualized using the 'histogrammaker' function.
+
+Short tutorial for the useage of the code:
+
+import angular_correlations as ac
+import numpy as np
+
+#create the Lattice object
+lattice = ac.Lattice(filename = "sm_test0.dat")
+
+#calculate angular correlation
+ang_corr = lattice.angular_correlation()
+
+#visualize correlations
+ang_min = -np.pi
+ang_max = np.pi
+bin_num = 40
+vals,bins = ac.histogrammaker(angular_correlation,ang_min,ang_max,bin_num)
+
+For further information see the commented code and the docstrings of the functions.
