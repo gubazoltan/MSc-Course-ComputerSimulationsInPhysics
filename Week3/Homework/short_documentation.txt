@@ -1,0 +1,46 @@
+Short documentation for the kinetic_MC.py code.
+
+The uses one main object, the Lattice object. 
+
+A Lattice is a container of particles that are randomly distributed in it when the object is created. The Lattice object represents a triangular lattice, the particles in it are represented by the lattice_matrix attribute of the object. 
+
+A Lattice object can be created with 3 important attributes of the system. These are the linear size of the lattice (N), the number of particles in the lattice (particle_number) and the inverse temperature of the system (Beta). When a Lattice object is created the particles are randomly distributed in the system. 
+The inverse temperature sets a characteristic energy scale for transitions in the system. 
+
+The two main functions of interest are the 'simulate_TD_correlations' and the 'transition_point_finder'. 
+
+The former function can be used to monitor the time-evolution of the density-density correlations in the system, where now time is to be understood as the iteration steps of the simulation, not real time. 
+
+The latter function can be used to determine the phase transition point of the system. That is, the function returns a list of correlations for each inverse temperature value. From the characteristic change in the density-density correlation we can conclude the transition point as a value of Beta. 
+
+Short tutorial to use the code:
+
+import matplotlib.pyplot as plt
+import kinetic_MC as kmc
+import numpy as np
+
+#linear size of the lattice
+N = 32
+
+#number of particles to be distributed on the lattice
+particle_number = int(N*N/4)
+
+#set the inverse temperature of the system
+Beta = 0.15
+
+#create the Lattice object
+Test_lattice = kmc.Lattice(N = N, particle_number = particle_number, Beta = Beta)
+
+#set an iteration time 
+it_num = 2000
+
+#find the time dependence of the correlations
+cors = kmc.simulate_TD_correlations(Lattice = Test_lattice, it_num = it_num)
+
+#plot the correlations
+plt.plot(cors/particle_number)
+plt.xlabel("Iteration",fontsize = 14)
+plt.ylabel("Correlation", fontsize = 14)
+plt.show()
+
+For further information see the commented code and the docstrings of the functions.
