@@ -1,6 +1,7 @@
 import numpy as np
 import netpbmfile as npf
-from scipy import interpolate
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
 
 def divgen(num):
     """
@@ -71,13 +72,17 @@ def single_boxing(fractal, box_length, fsize_x, fsize_y, ones):
                 num_boxes += 1
     return num_boxes
 
-def fract_dim(filename):
+def fract_dim(filename,f,l):
     """
     Calculates the dimension of the fractal using the box covering algorithm.
 
     Parameters
     ----------
     filename : string, name of the file that contains the fractal as a .pbm file.
+    
+    f: integer, the first value of blengths that we consider when we want to find the fractal dimension
+    
+    l: integer, the last value of blengths that we consider when we want to find the fractal dimension
 
     Returns
     -------
@@ -100,7 +105,7 @@ def fract_dim(filename):
     ones = np.ones(fsize_x*fsize_y).reshape((fsize_y,fsize_x))
     
     #list that contains the box lengths for which we do the covering
-    blengths = (divgen(fsize_x))[2:-2]
+    blengths = (divgen(fsize_x))
     
     #collect the number of boxes needed to cover the fractal here
     bnums = []
@@ -115,16 +120,26 @@ def fract_dim(filename):
     #create numpy array from box numbers
     bnums = np.array(bnums)
     
-    #now interpolate the corresponding box number and box lengths
-    #here we already interpolate with the logarithms of the 1/boxlengths and with the logarithm of the number of boxes needed,
-    #beacause this will be a simple line
-    f = interpolate.interp1d(np.log(1/blengths), np.log(bnums), fill_value='extrapolate')
+    #do linear regression for the Bnums(blengths) data
+    reg = LinearRegression()
     
-    #we use this extremely small value to interpolate
-    x = 1e-300
+    #we do the fitting only for elements in blengths[f:l]
+    reg.fit(np.log(blengths).reshape(-1,1)[f:l], np.log(bnums)[f:l])
     
-    #the dimension of the fractal is the limit of the expression below where we take the box length to approach zero
-    dim = f(np.log(1/x))/np.log(1/x)
+    #the fractal dimension is predicted by the linear regression model
+    dim = -1*reg.coef_
+    
+    #show how good the linear regression is based on the fitted data
+    pred = reg.predict(np.log(blengths).reshape(-1,1)[f:l])
+    
+    #draw a figure for the fitting
+    fig=plt.figure()
+    plt.plot(np.log(blengths),np.log(bnums), 'o')
+    plt.plot(np.log(blengths)[f:l], pred)
+    plt.ylabel(r'$\mathrm{ln(N_{box})}$', fontsize = 16)
+    plt.xlabel(r'$\mathrm{ln(Length_{box})}$', fontsize = 16)
+    #save the figure
+    plt.savefig(filename + "_plot.png")
     
     #return the dimension of the fractal, the box lengths and the number of boxes needed to cover the fractal
     return dim,blengths,bnums
