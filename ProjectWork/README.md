@@ -12,7 +12,7 @@ Sources:
 [Lecture notes](https://arxiv.org/abs/1902.00967)
 [I'm an inline-style link](https://www.google.com)
 
-[I'm an inline-style link with title](https://arxiv.org/abs/1902.00967/)
+[Lecture Notes on the Theory of Open Quantum Systems](https://arxiv.org/abs/1902.00967/)
 
 [I'm a reference-style link][Arbitrary case-insensitive reference text]
 
