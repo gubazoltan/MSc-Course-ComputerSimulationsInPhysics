@@ -1,0 +1,51 @@
+This is a short documentation for the wolff.py code.
+
+The code uses the Wolff algorithm to carry out the simulation of an Ising-model.
+The main idea of the Wolff algorithm is the construction of Ising droplets so that not only single spins will get flipped during one iteration,
+but a whole bunch of spins. 
+
+There are several important functions in the code.
+-One of them is the find_droplet() function, which finds the Ising droplet of a random spin in the lattice. This function is defined recursively
+so that all the possible spins will be tested to join it to the droplet. 
+-Another important function is the droplet_energy() function which calculates the energy associated to an Ising droplet. This function
+is very useful because when we calculate the time evolution of the system and we want to obtain the energy of the system as a function of time,
+we don't need to always evaluate the Hamiltonian in the whole lattice. We only need to find the difference between the interactin energy of the Ising droplet that will be flipped in the next step. 
+
+There are several useful methods in the code. One can carry out a single time evolution of a random lattice and then obtain the energy of the lattice as a function of time. It is also possible to save snapshots of the lattice and then create an animation of time evolution of the lattice. One can also measure the fluctuation of 
+energy in the system as a function of the inverse temperature. The divergence of these fluctuations indicate a phase transition point of the system. 
+
+Short tutorial for the usage of the code:
+
+import numpy as np
+import wolff as wf
+
+#single time evolution
+Lx = 40
+Ly = 40
+J = 1
+Beta = 0.45
+initial_lattice, neighs = wf.create_lattice(Lx = Lx, Ly = Ly)
+itnum = 1500
+Es, latcont = wf.wolff_algorithm(lattice = initial_lattice.copy(), neighs = neighs, Beta = Beta, J = J,
+                             Lx = Lx, Ly = Ly, itnum = itnum)
+                             
+#create animation of the time evolution of the lattice
+wf.anim(latcont)
+
+#measure energy fluctuations in the system
+Lx = 40
+Ly = 40
+J = 1
+
+initial_lattice, neighs = wf.create_lattice(Lx = Lx, Ly = Ly)
+
+Betas = np.linspace(0.4,0.48,30)
+
+itnum = 10000
+ens_num = 1000
+#This simulation takes about 11 hours so I dont recommend running it
+Ef = wf.ensemble_av(Betas = Betas, J = J, Lx = Lx, Ly = Ly, itnum = itnum, ens_num = ens_num)
+
+#note that the code also carries out an ensemble averaging.
+
+For further information see the commented code and the docstrings.
