@@ -7,3 +7,4 @@ ___
 Sources: 
 - [Lecture Notes on the Theory of Open Quantum Systems](https://arxiv.org/abs/1902.00967/)
 - [Vectorization](https://en.wikipedia.org/wiki/Vectorization_(mathematics))
+- [Lindbladian](https://en.wikipedia.org/wiki/Lindbladian)
