@@ -6,5 +6,5 @@ This folder is used to contain the project work related to the course.
 ___
 Sources: 
 <ul>
-<li> [Lecture Notes on the Theory of Open Quantum Systems](https://arxiv.org/abs/1902.00967). </li>
+<li> [Lecture Notes on the Theory of Open Quantum Systems](https://arxiv.org/abs/1902.00967/) </li>
 </ul>
