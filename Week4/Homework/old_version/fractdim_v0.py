@@ -36,20 +36,21 @@ def divgen(num):
     #return the divisors
     return divsors
 
-def single_boxing(fractal, box_length, fsize_x, fsize_y):
+def single_boxing(fractal, box_length, fsize_x, fsize_y, ones):
     """
     Carries out the boxing for a fractal with box length characterized by box_length.
 
     Parameters
     ----------
-    fractal : 2d numpy array of zeros and ones, ones denote the object while zeros denote the background. To obtain such a fractal we need to modify
-        the fractal that was read by the code.
+    fractal : 2d numpy array of zeros and ones, zeros denote the object while ones denote the background.
     
     box_length : integer, length of the box we use for the boxing.
     
     fsize_x : length of the fractal in the x direction.
     
     fsize_y : length of the fractal in the y direction.
+       
+    ones : 2d numpy array of ones, useful when someone calculates the number of boxes needed to cover the fractal.
 
     Returns
     -------
@@ -65,9 +66,9 @@ def single_boxing(fractal, box_length, fsize_x, fsize_y):
     
     for j in range(fl_y): #iterate through the num of boxes needed in the y direction
         for i in range(fl_x): #iterate through the number of boxes needed in the x direction
-            #if the sum of the fractal on this region is not zero, than we have a part of the fractal in this region meaning that we need to cover it 
             fract_sum = np.sum(fractal[i*box_length:(i+1)*box_length,j*box_length:(j+1)*box_length])
-            if fract_sum != 0: #if the sum is not zero we need to add another box here
+            ones_sum = np.sum(ones[i*box_length:(i+1)*box_length,j*box_length:(j+1)*box_length])
+            if fract_sum != ones_sum: 
                 num_boxes += 1
     return num_boxes
 
@@ -92,19 +93,17 @@ def fract_dim(filename,f,l):
     bnums : number of boxes needed to cover the fractal using the corresponding box lengths in blengths.
 
     """
-    #import the fractal and convert it into a numpy array with datatype int16
-    fractal = np.array(npf.imread("./hf04/"+filename+".pbm"), dtype = "int16")
-    
-    #substract one and multiply with -1
-    #by doing this we achieve that the fractal is now denoted by ones in the fractal array while the background is denoted by zeros
-    fractal += -1
-    fractal *= -1
+    fractal = np.array(npf.imread("./hf04/"+filename+".pbm"))
     
     #height and width of the fractal 
     #height of the fractal is y while width is x
     fsize_y = len(fractal)
     fsize_x = len(fractal[0])
-        
+    
+    #creates a background with the same size as the fractal
+    #this will ne useful when calculating the number of boxes needed to cover the fractal
+    ones = np.ones(fsize_x*fsize_y).reshape((fsize_y,fsize_x))
+    
     #list that contains the box lengths for which we do the covering
     blengths = (divgen(fsize_x))
     
@@ -115,7 +114,7 @@ def fract_dim(filename,f,l):
     for blength in blengths:
         
         #find the number of boxes needed to cover the fractal
-        bnum = single_boxing(fractal = fractal, box_length = blength, fsize_x = fsize_x, fsize_y = fsize_y)
+        bnum = single_boxing(fractal = fractal, box_length = blength, fsize_x = fsize_x, fsize_y = fsize_y, ones = ones)
         bnums.append(bnum)
     
     #create numpy array from box numbers

@@ -1,0 +1,25 @@
+This is a short documentation for fractdim.py code. 
+
+This code can be used to determine the Minkowski–Bouligand dimension of any fractal that is given in a .pbm file.
+The code uses a simple box covering method to determine the fractal dimension. 
+
+The main function of the code is fract_dim that gets the name of the .pbm file containing the fractal and gives back the dimension of the fractal.
+The other important function is the single_boxing function, which calculates the number of boxes needed to cover the whole fractal with a box_length given as 
+an argument of the function. 
+
+
+Short tutorial to use the code:
+
+import fractdim as fd
+import matplotlib.pyplot as plt
+
+#to get the fractal dimension of the bransley fern
+dim,blengths,bnums = fd.fract_dim(filename = "fractalFern_1600", f = 1, l = -1)
+
+
+For further information see the docstrings and the documented code.
+
+By using fractdim.py I was not able to precisely obtain the fractal dimension of the Bransley Fern. 
+For that I obtained 1.78 for the dimension instead of 1.45.
+For the Sierpinski fractal I obtained a pretty good etimate of the fractal dimension. 
+for the Sierpinski fractal I obtained 1.56 while the analytical value is 1.58.
