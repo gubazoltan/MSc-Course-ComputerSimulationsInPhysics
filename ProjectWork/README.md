@@ -8,4 +8,5 @@ Sources:
 <ul>
 <li> [Lecture Notes on the Theory of Open Quantum Systems](https://arxiv.org/abs/1902.00967/) </li>
 </ul>
-[Lecture Notes on the Theory of Open Quantum Systems](https://arxiv.org/abs/1902.00967/)
+[Lecture](https://arxiv.org/abs/1902.00967/)
+[Lecture notes](https://arxiv.org/abs/1902.00967)
