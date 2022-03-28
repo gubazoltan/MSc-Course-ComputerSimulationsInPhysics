@@ -1,0 +1,19 @@
+This is a short documentation for the numerov.py code. 
+
+The code uses the so called Numerov method to solve the Schrödinger equation for different types of potentials. 
+Currently there are two types of potentials implemented, a square potential and a gaussian potential. Both of these can be scaled to be a potential hill 
+or a potential well.
+These potentials can be addressed with numerov.square_potential() and with numerov.gaussian_potential(). 
+
+The main function of the code is numerov.scattering which calculates the wavefunction of a particle scattering off from a potential
+with energy E. The function takes as arguments the energy of the particle, the type of potential, the height of the potential, the width of the potential
+and the number of position values evaluted inside the potential.
+This function returns the reflectance and the transmission coefficients for the scattering. 
+
+One can also obtain the analytical solutions for the square potential with the use of the numerov.analytical_curve() which returns the analytical value
+of the transmission coefficient. 
+
+The transmission coefficients as a function of energy can be easily obtained out via the numerov.multi_scattering_energies() function which
+takes as its argument (besides the usual arguments) the list of possible energy values for which the transmission coefficient is to be obtained. 
+
+For further information see the well documented code and the docstrings.
