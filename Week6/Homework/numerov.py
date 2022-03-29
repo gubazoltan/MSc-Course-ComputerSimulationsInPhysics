@@ -44,8 +44,9 @@ def gaussian(x, width):
 
     """
     #return gaussian curve 
+    #a cutoff is incorporated for the gaussian so that it will be a smooth potential
     a = width / 2
-    return np.exp( -1 * x**2 / ( 2 * a**2 ) )
+    return np.exp( -1 * x**2 / ( 2 * (a/4)**2 ) )
 
 def gaussian_potential(width, V0, x):
     """
