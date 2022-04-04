@@ -1,0 +1,24 @@
+Short documentation for the split.py code.
+
+The code uses the split operator method to solve the time dependent Schrödinger equation for a gaussian wavepacket scattering off from a square well.
+There are two main functions in the code which carries out the numerical calculation. The split.scattering() function takes the general properties of 
+the scattering process as its input and return the time dependent wavefunction of the system and the corresponding transmission coefficient. 
+While the split.iteration() carries out the time evolution itself using the split operator method. 
+
+Both of these functions have another variation in which the time dependent wavefunction is not considered and only the final wavefunction is returned at the end. 
+The numerical results are also compared to the analytical ones. A good match is shown between the two for a special set of parameters of the wavepacket.
+
+Short tutorial for the code: 
+
+E0 = 2.5 #"energy of the wavepacket" 
+DE = 0.08 #spread of wavepacket in energy
+N = 1000 #number of position points
+V0 = 2. #height of the potential barrier
+a = 1 #in nanometer
+itnum = 400 #number of iterations for the time evolution
+
+#calculate one scattering with the above parameters
+#T is the transmission of the wavepacket through the square well
+xs, sps, fw, T = split.scattering(E0 = E0, DE = DE, N = N, V0 = V0, a = a, itnum = itnum)
+
+For further information see the documented code and the docstrings. 
