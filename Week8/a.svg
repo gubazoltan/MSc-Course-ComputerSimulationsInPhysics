@@ -1,0 +1,58 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg    xmlns="http://www.w3.org/2000/svg"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+        width="2.2in" height="1.6in"
+        viewBox="-10 -10 1010 1010">
+<circle cx="588" cy="787" r="25"
+ style="fill:#ff0000;stroke:#000000;stroke-width:8;"/>
+<polyline points="588,787 0,0
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+<circle cx="867" cy="80" r="25"
+ style="fill:#ff0000;stroke:#000000;stroke-width:8;"/>
+<polyline points="867,80 0,0
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+<circle cx="958" cy="196" r="25"
+ style="fill:#00ff00;stroke:#000000;stroke-width:8;"/>
+<polyline points="958,196 867,80
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+<circle cx="447" cy="754" r="25"
+ style="fill:#00ff00;stroke:#000000;stroke-width:8;"/>
+<polyline points="447,754 588,787
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+<circle cx="172" cy="714" r="25"
+ style="fill:#00ff00;stroke:#000000;stroke-width:8;"/>
+<polyline points="172,714 588,787
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+<circle cx="870" cy="304" r="25"
+ style="fill:#00ff00;stroke:#000000;stroke-width:8;"/>
+<polyline points="870,304 799,349
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+<circle cx="184" cy="333" r="25"
+ style="fill:#00ff00;stroke:#000000;stroke-width:8;"/>
+<polyline points="184,333 28,51
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+<circle cx="799" cy="349" r="25"
+ style="fill:#ff0000;stroke:#000000;stroke-width:8;"/>
+<polyline points="799,349 0,0
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+<circle cx="238" cy="309" r="25"
+ style="fill:#00ff00;stroke:#000000;stroke-width:8;"/>
+<polyline points="238,309 28,51
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+<circle cx="28" cy="51" r="25"
+ style="fill:#ff0000;stroke:#000000;stroke-width:8;"/>
+<polyline points="28,51 0,0
+" style="stroke:#000000;stroke-width:8;
+stroke-linejoin:miter stroke-linecap:butt;"/>
+</svg>
