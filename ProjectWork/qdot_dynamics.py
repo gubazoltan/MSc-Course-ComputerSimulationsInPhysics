@@ -72,14 +72,15 @@ def matrixexponen(n,a):
     return e
 
 def vected_comm(deltat, hcoef):
-    H = np.array([ [0, deltat/2], [deltat/2, hcoef] ], dtype=np.complex128) / hbar #create the time dependent hamiltonian
+    H = np.array([ [0, deltat/2], 
+                   [deltat/2, hcoef] ], dtype=np.complex128) / hbar #create the time dependent hamiltonian
     
     #now carry out the vectorization of the hamiltonian first
     ii = np.eye(2, dtype=np.complex128) #2x2 identity
 
     #do vectorization for the commutator of the hamiltonian
-    pre=np.kron(ii,H)
-    post=np.kron(H,ii)
+    pre = np.kron(ii,H)
+    post = np.kron(H,ii)
 
     #evaluate the commutator
     vected_comm = -1j*(pre - post)
@@ -112,8 +113,8 @@ def relaxation_rates(Temp, gammat, deltat, hcoef):
         gamma1 = gammat
         gamma2 = 0
     else: #otherwise use these rates
-        gamma1 = gammat*(1+1/(np.exp(esplit/(k*Temp))-1))
-        gamma2 = gammat/(np.exp(esplit/(k*Temp))-1)
+        gamma1 = gammat * ( 1 + 1 / ( np.exp(esplit / ( k * Temp )) - 1 ))
+        gamma2 = gammat / ( np.exp( esplit / ( k * Temp )) - 1 )
         
     return gamma1, gamma2
 
@@ -163,9 +164,6 @@ def vected_jops(Temp, gammat, deltat, hcoef):
     
     #create the jump operators
     jop1, jop2 = jump_operators(Temp = Temp, gammat = gammat, deltat = deltat, hcoef = hcoef)
-    
-    #create identity
-    ii = np.eye(2, dtype = np.complex128)
     
     #carry out the vectorization method for both of them
     term11, term12 = vectorize_jumpoperator(jop = jop1)
@@ -271,7 +269,7 @@ def find_CG(rho_t, w, ts, dV, tint, dt):
     
     #take the real part
     C = np.real(C)
-    
+
     #return the capacitance and the conductance
     return C, G
 
