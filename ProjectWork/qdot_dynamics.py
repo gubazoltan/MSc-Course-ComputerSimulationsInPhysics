@@ -40,6 +40,25 @@ class Result:
         
 
 def matrixexponen(n,a):
+    """
+    Function that carries out matrix exponentiation. This method is usually a bit faster than scipy's matrix 
+    exponentiation. 
+    
+    Disclaimer: A few years ago I started to use this method which I borrowed from a friend of mine.
+    Since then, I could not find the source of the method. 
+    Anyway, it works.
+
+    Parameters
+    ----------
+    n : integer, the dimension of the matrix to be exponentialized. 
+    
+    a : array of n arrays of length n, the matrix to be exponentialized.
+
+    Returns
+    -------
+    e : array of n arrays of length n, the exponentialized matrix.
+
+    """
     #this function is used to do matrix exponentialization
     #this method is usually a bit faster than the usual scipy method this is why I swtiched to it
 
@@ -50,47 +69,80 @@ def matrixexponen(n,a):
     a = a / ( 2.0 ** s )
     x = a.copy ( )
     c = 0.5
-    e = np.eye ( n, dtype = np.complex64 ) + c * a
+    ee = np.eye ( n, dtype = np.complex64 ) + c * a
     d = np.eye ( n, dtype = np.complex64 ) - c * a
     p = True
 
-    for k in range ( 2, q + 1 ):
-        c = c * float ( q - k + 1 ) / float ( k * ( 2 * q - k + 1 ) )
+    for kk in range ( 2, q + 1 ):
+        c = c * float ( q - kk + 1 ) / float ( kk * ( 2 * q - kk + 1 ) )
         x = np.dot ( a, x )
-        e = e + c * x
+        ee = ee + c * x
         if ( p ):
             d = d + c * x
         else:
             d = d - c * x
         p = not p
 
-    e = np.linalg.solve ( d, e )
-    e = np.ascontiguousarray(e)
+    ee = np.linalg.solve ( d, ee )
+    ee = np.ascontiguousarray(ee)
 
-    for k in range ( 0, s ):
-        e = np.dot ( e, e )
-    return e
+    for kk in range ( 0, s ):
+        ee = np.dot ( ee, ee )
+    return ee
 
 def vected_comm(deltat, hcoef):
-    H = np.array([ [0, deltat/2], 
-                   [deltat/2, hcoef] ], dtype=np.complex128) / hbar #create the time dependent hamiltonian
+    """
+    Function that calculates the vectorized form of the commutator in the Lindblad equation.
+
+    Parameters
+    ----------
+    deltat : float, tunneling matrix element.
+    
+    hcoef : float, time dependent detuning in the Hamiltonian.
+
+    Returns
+    -------
+    vected_comm : 4x4 matrix, the vectorized commutator in the Lindblad equation.
+
+    """
+    #create the time dependent hamiltonian
+    H = np.array([ [0, deltat / 2], 
+                   [deltat / 2, hcoef] ], dtype = np.complex128) / hbar 
     
     #now carry out the vectorization of the hamiltonian first
-    ii = np.eye(2, dtype=np.complex128) #2x2 identity
+    #2x2 identity
+    ii = np.eye(2, dtype=np.complex128) 
 
     #do vectorization for the commutator of the hamiltonian
-    pre = np.kron(ii,H)
-    post = np.kron(H,ii)
+    pre = np.kron(ii, H) #first part of the commutator
+    post = np.kron(H, ii) #second part of the commutator
 
     #evaluate the commutator
-    vected_comm = -1j*(pre - post)
+    vected_comm = -1.j * (pre - post)
     
+    #return the vectorized commutator
     return vected_comm
 
 def snapshot_states(deltat,hcoef):
-    #now evaluate the snapshot ground and excited state of the time dependent hamiltonian
-    d  = deltat #shorthand notation 
-    x  = hcoef #same
+    """
+    Function that calculates the instantaneous eigenstates of the time dependent Hamiltonian.
+
+    Parameters
+    ----------
+    deltat : float, tunneling matrix element.
+    
+    hcoef : float, time dependent detuning in the Hamiltonian.
+
+    Returns
+    -------
+    gr_n : array, the instantaneous normalized ground state of the Hamiltonian.
+    
+    exc_n : array, the instantaneous normalized excited state of the Hamiltonian.
+
+    """
+    #shorthand notation for the evaluation of the eigenstates
+    d  = deltat  
+    x  = hcoef 
     
     #now evaluate the snapshots of the ground and the excited states for the system
     #(plug in numbers into the analytical formula)
@@ -105,6 +157,26 @@ def snapshot_states(deltat,hcoef):
     return gr_n, exc_n
 
 def relaxation_rates(Temp, gammat, deltat, hcoef):
+    """
+    Function that finds the temperature dependent downhill and uphill relaxation rates.
+
+    Parameters
+    ----------
+    Temp : float, temperature of the system.
+    
+    gammat : float, general relaxation rate.
+    
+    deltat : float, tunneling matrix element.
+    
+    hcoef : float, time dependent detuning in the Hamiltonian.
+
+    Returns
+    -------
+    gamma1 : float, downhill relaxation rate.
+    
+    gamma2 : float, uphill relaxation rate.
+
+    """
     #energy difference between the ground and excited states
     esplit = np.sqrt(deltat**2+hcoef**2)
     
@@ -115,11 +187,33 @@ def relaxation_rates(Temp, gammat, deltat, hcoef):
     else: #otherwise use these rates
         gamma1 = gammat * ( 1 + 1 / ( np.exp(esplit / ( k * Temp )) - 1 ))
         gamma2 = gammat / ( np.exp( esplit / ( k * Temp )) - 1 )
-        
+    
+    #return the downhill and uphill relaxation rates
     return gamma1, gamma2
 
 
 def jump_operators(Temp, gammat, deltat, hcoef):
+    """
+    Function that returns the jump operators that define the coupling with the environment.
+    
+
+    Parameters
+    ----------
+    Temp : float, temperature of the system.
+    
+    gammat : float, general relaxation rate.
+    
+    deltat : float, tunneling matrix element.
+    
+    hcoef : float, time dependent detuning in the Hamiltonian.
+
+    Returns
+    -------
+    jop1 : 2x2 matrix, the jump operator which describes the downhill relaxation: |ground><excited|.
+    
+    jop2 : 2x2 matrix, the jump operator which describes the uphill relaxation: |excited><ground|.
+
+    """
     
     #calculate the normalized ground and excited states
     gr_n, exc_n = snapshot_states(deltat = deltat, hcoef = hcoef)
@@ -140,8 +234,23 @@ def jump_operators(Temp, gammat, deltat, hcoef):
     return jop1, jop2
 
 def vectorize_jumpoperator(jop):
+    """
+    Function that calculates the vectorized terms in the Lindblad equation which corresponds to one of the jump operators.
+
+    Parameters
+    ----------
+    jop : 2x2 matrix, jump operator that is to be vectorized.
+
+    Returns
+    -------
+    term1 : 4x4 matrix, the vectorized first term in the Lindblad equation.
+    
+    term2 : 4x4 matrix, the vectorized anticommutator in the Lindblad equation.
+
+    """
     #carry out the vectorization for a single jump operator
     
+    #define the identity
     ii = np.eye(2, dtype = np.complex128)
     
     #carry out the vectorization method for a jump operator in the lindbladian
@@ -150,16 +259,41 @@ def vectorize_jumpoperator(jop):
     jdj = jop_d @ jop #operator dagger times the operator
     jdj_t = jdj.T #transpose of the previous product
     
-    #first vectorized
+    #vectorized form of the first term in the Lindblad equation
     term1 = np.kron(jop.conj(), jop)
     
-    #second vectorized
+    #vectorized form of the anticommutator in the Lindblad equation
     term2 = np.kron(ii, jdj) + np.kron(jdj_t, ii)    
     
     #return the two terms
     return term1, term2
 
 def vected_jops(Temp, gammat, deltat, hcoef):
+    """
+    Function that calculates the jump operators and returns the vectorized form of 
+
+    Parameters
+    ----------
+    Temp : float, temperature of the system.
+    
+    gammat : float, general relaxation rate.
+    
+    deltat : float, tunneling matrix element.
+    
+    hcoef : float, time dependent detuning in the Hamiltonian.
+
+    Returns
+    -------
+    term11 : 4x4 matrix, the vectorized first term in the Lindblad equation corresponding to the downhill jump operator.
+    
+    term12 : 4x4 matrix, the vectorized anticommutator in the Lindblad equation corresponding to the downhill jump operator.
+    
+    term21 : 4x4 matrix, the vectorized first term in the Lindblad equation corresponding to the uphill jump operator.
+    
+    term22 : 4x4 matrix, the vectorized anticommutator in the Lindblad equation corresponding to the uphill jump operator.
+    
+
+    """
     #vectorize the jump operators in the lindblad equation
     
     #create the jump operators
@@ -174,12 +308,42 @@ def vected_jops(Temp, gammat, deltat, hcoef):
     return term11, term12, term21, term22
 
 def liouvillians(deltat, epsilon0, dV, Temp, w, gammat, dt, tsu):
+    """
+    Function that returns a list of vectorized liouvillian operators corresponding to each time step
+    for a single period of the drive.
+
+    Parameters
+    ----------
+    deltat : float, tunneling matrix element.
     
+    epsilon0 : float, detuning of the right quantum dot.
+    
+    dV : float, voltage amplitude of the drive.
+    
+    Temp : float, temperature of the system.
+    
+    w : float, frequency of the drive.
+    
+    gammat : float, general relaxation rate.
+
+    dt : float, difference between sequential time steps.
+    
+    tsu : list of floats, the time points during a single period of the drive- That is, tsu[0] = 0, tsu[-1] = T-dt. 
+
+    Returns
+    -------
+    unitary : list of 4x4 matrices, the liouvillian operators corresponding to each time step in tsu.
+
+    """
+    
+    #define a list of 4x4 matrices with complex datatype
     unitary = np.zeros((4,4,len(tsu)),dtype=np.complex128) #create a container for the exponentialized operators
     
+    #for each time step in tsu
     for idx,t in enumerate(tsu):
         
-        hcoef = epsilon0 - e * dV * np.sin(w * t) #time dependent coefficient in the hamiltonian
+        #calculate the time dependent part of the Hamiltonian
+        hcoef = epsilon0 - e * dV * np.sin(w * t) 
         
         #calculate the vectorized form of the commutaton in the lindbladian
         hamil = vected_comm(deltat = deltat, hcoef = hcoef)
@@ -197,16 +361,35 @@ def liouvillians(deltat, epsilon0, dV, Temp, w, gammat, dt, tsu):
         #add the exponentialized operator to the container
         unitary[:,:,idx] = uu
 
+    #return the exponentialized vectorized liouvillians 
     return unitary
 
 def time_evolve(psi0, unitary, ts, tsu):
+    """
+    Function that carries out the time evolution of the initial psi0 state with the unitary time evolution operators.
+
+    Parameters
+    ----------
+    psi0 : list of floats, the vectorized density matrix corresponding to the initial state of the system.
+    
+    unitary : list of 4x4 matrices, the liouvillian operators corresponding to each time step in tsu.
+    
+    ts : list of floats, the time points during the whole measurement.
+        
+    tsu : list of floats, the time points during a single period of the drive- That is, tsu[0] = 0, tsu[-1] = T-dt. 
+
+    Returns
+    -------
+    rhot : list of 2x2 matrices, the time dependent density matrix corresonding to each time point in the ts list.
+
+    """
     #set psi to the initial state
     psi = psi0.copy()
     
     #collect the time dependent density matrix here
     rhot = np.zeros( (len(ts), 2, 2) , dtype = np.complex128)
     
-    #density matrix for the initial state
+    #reshape psi to get the initial density matrix
     psim = psi.T.reshape((2,2))
     
     #append it to the density matrix collector
@@ -214,18 +397,35 @@ def time_evolve(psi0, unitary, ts, tsu):
 
     #carry out the time evolution till the final point
     for idx, t in enumerate(ts[ : -1 ]):
-        mat = np.ascontiguousarray(unitary[ : , : , idx%len(tsu) ]) #take the liouvillian at time point t
         
-        psi = mat @ psi #time evolve with dt (calculate psi(t+dt))
+        #take the liouvillian at time point t
+        #make sure that the periodicity is correct
+        mat = np.ascontiguousarray(unitary[ : , : , idx % len(tsu) ])
+        
+        #time evolve with dt (calculate psi(t+dt))
+        psi = mat @ psi 
         
         #construct the density matrix of the state and append the new density matrix to the list
-        psim=psi.T.reshape((2,2))
-        rhot[idx+1,:,:] = psim
+        psim = psi.T.reshape( (2, 2) )
+        rhot[ idx + 1, : , : ] = psim
     
     #return the time dependent density matrices as 2x2 matrices
     return rhot
 
 def transform_state(psi):
+    """
+    Function that takes the row vector of the psi state and then creates the corresponding density matrix and 
+    the vectorized density matrix.
+
+    Parameters
+    ----------
+    psi : list of floats, the row vector corresponding to the psi state, for example psi = np.array([1,0]).
+
+    Returns
+    -------
+    vected_rho : list of floats, the vectorized form of the density matrix corresponding to state psi.
+
+    """
     #create the density matrix out of the state psi and then create the vectorized density matrix
     #psi is expected to be a usual numpy array
     
@@ -245,26 +445,52 @@ def transform_state(psi):
     return vected_rho
 
 def find_CG(rho_t, w, ts, dV, tint, dt):
+    """
+    Function that finds the parameters R and C of the parallel RC circuit equivalent to the double quantum dot.
+
+    Parameters
+    ----------
+    rho_t : list of 2x2 matrices, the time dependent density matrix corresonding to each time point in the ts list.
+    
+    w : float, frequency of the drive.
+    
+    ts : list of floats, the time points during the whole measurement.
+    
+    dV : float, voltage amplitude of the drive.
+    
+    tint : integer, the length of the measurement expressed in terms of the period of the drive.
+        
+    dt : float, difference between sequential time steps.
+
+    Returns
+    -------
+    C : float, the capacitance of the equivalent parallel RC circuit.
+    
+    G : float, the conductance of the equivalent parallel RC circuit (1/R).
+
+    """
+    
+    #we need these to find the inphase and out-of-phase components of the charge response
     sinwt = np.sin(w*ts)
     coswt = np.cos(w*ts)
 
-    #occupation of the right quantum dot
+    #get the time dependent occupation of the right quantum dot
     nRt = rho_t[:,1,1] 
     
-    #calculate the fourier transform of the time dependent occupation
+    #calculate the out of phase component of the charge response 
     nRt_fourier_G = -2 / dV / tint * e * nRt * coswt * w
     
-    #then calculate the conductance
+    #then integrate
     G = np.trapz(nRt_fourier_G, ts, dt)
     
     #take the real part
     G = np.real(G)
     
     #now calcuate the capacitance
-    #calculate the inphase fourier coefficient
+    #calculate the inphase component
     nRt_fourier_C = 2 / dV / tint * e * nRt * sinwt
     
-    #then calculate the capaticance
+    #then integrate
     C = np.trapz(nRt_fourier_C, ts, dt)
     
     #take the real part
@@ -274,8 +500,33 @@ def find_CG(rho_t, w, ts, dV, tint, dt):
     return C, G
 
 def lindsolve(params):
-    #unpack the parameters of the function
+    """
+    Function that carries out the simulation of the double quantum dot and calculates the parameters of the equivalent
+    parallel RC circuit.
 
+    Parameters
+    ----------
+    params : list of parameters that describes the characteristics of the measurement. These are deltat, epsilon0, dV,
+    Temp, w, dtnum, tintnum and gammat. Out of these, only dtnum was not introduced so far. 
+        dtnum : integer, needed to define the infinitesimal time step of the simulation. dt is defined as T/dtnum. 
+
+    Returns
+    -------
+    Cg : float, capacitance of the ground state.
+    
+    Gg : float, conductance of the ground state.
+    
+    Ce : float, capacitance of the excited state.
+    
+    Ge : float, conductance of the excited state.
+    
+    rhogt : list of 2x2 matrices, the time dependent density matrix corresonding to the ground state.
+    
+    rhoet : list of 2x2 matrices, the time dependent density matrix corresonding to the excited state.
+
+    """
+    
+    #unpack the parameters of the function
     deltat, epsilon0, dV, Temp, w, dtnum, tintnum, gammat = params
     
     #frequency of the drive
