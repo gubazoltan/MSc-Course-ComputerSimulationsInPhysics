@@ -1,6 +1,25 @@
 import numpy as np
 
 def matrixexponen(n,a):
+    """
+    Function that carries out matrix exponentiation. This method is usually a bit faster than scipy's matrix 
+    exponentiation. 
+    
+    Disclaimer: A few years ago I started to use this method which I borrowed from a friend of mine.
+    Since then, I could not find the source of the method. 
+    Anyway, it works.
+
+    Parameters
+    ----------
+    n : integer, the dimension of the matrix to be exponentialized. 
+    
+    a : array of n arrays of length n, the matrix to be exponentialized.
+
+    Returns
+    -------
+    e : array of n arrays of length n, the exponentialized matrix.
+
+    """
     #this function is used to do matrix exponentialization
     #this method is usually a bit faster than the usual scipy method this is why I swtiched to it
 
@@ -11,29 +30,44 @@ def matrixexponen(n,a):
     a = a / ( 2.0 ** s )
     x = a.copy ( )
     c = 0.5
-    e = np.eye ( n, dtype = np.complex64 ) + c * a
+    ee = np.eye ( n, dtype = np.complex64 ) + c * a
     d = np.eye ( n, dtype = np.complex64 ) - c * a
     p = True
 
-    for k in range ( 2, q + 1 ):
-        c = c * float ( q - k + 1 ) / float ( k * ( 2 * q - k + 1 ) )
+    for kk in range ( 2, q + 1 ):
+        c = c * float ( q - kk + 1 ) / float ( kk * ( 2 * q - kk + 1 ) )
         x = np.dot ( a, x )
-        e = e + c * x
+        ee = ee + c * x
         if ( p ):
             d = d + c * x
         else:
             d = d - c * x
         p = not p
 
-    e = np.linalg.solve ( d, e )
-    e = np.ascontiguousarray(e)
+    ee = np.linalg.solve ( d, ee )
+    ee = np.ascontiguousarray(ee)
 
-    for k in range ( 0, s ):
-        e = np.dot ( e, e )
-    return e
+    for kk in range ( 0, s ):
+        ee = np.dot ( ee, ee )
+    return ee
 
 def spin_operators(N):
-    #N is the number of spins in the chain
+    """
+    Calculates the tensor product spin operators that act globally on the spin chain. 
+    Returns a list called spin_ops with the following structure. spin_ops[i,k,:,:] corresponds to an 
+    matrix of size 2^N x 2^N which acts as an identity on all the spins expect the i-th spin, on which it
+    acts as a sigma_k operator, where k is taken from the set {x,y,z} and sigma_x,y,z corresponds to the pauli 
+    x, y and z operators. 
+    
+    Parameters
+    ----------
+    N : integer, the number of spins in the chain.
+
+    Returns
+    -------
+    spin_ops : list of all the global spin operators.
+
+    """
     
     #sigma0
     s0 = np.eye(2, dtype = np.complex128)
@@ -49,7 +83,8 @@ def spin_operators(N):
                      [0., -1.] ], dtype = np.complex128)
     
     #create a container for the spin operators
-    #which are of size 2^N * 2^N
+    #which are of size 2^N x 2^N
+    #we need a container for all the spins and for each spin we have 3 different operators.
     spin_ops = np.zeros((N, 3, 2**N, 2**N), dtype = np.complex128)
     
     #create the tensor product operators that act on the spins in the chain
@@ -69,7 +104,7 @@ def spin_operators(N):
         
         #and take kronecker product (from the right) for every spin
         #which is on the right of the spin
-        for j in range(i+1,3):
+        for j in range(i+1,N):
             Ox = np.kron(Ox, s0)
             Oy = np.kron(Oy, s0)
             Oz = np.kron(Oz, s0)            
@@ -79,39 +114,94 @@ def spin_operators(N):
         spin_ops[i,1,:,:] = Oy
         spin_ops[i,2,:,:] = Oz
         
+    #return the list of global spin operators
     return spin_ops
 
 def heis_ham_time_ind(N, J, spinops):
+    """
+    Contructs the time-independent part of the Heisenberg hamiltonian for the spin chain of N heisenberg spins. 
+
+    Parameters
+    ----------
+    N : integer, the number of spins in the chain.
+    
+    J : float, coupling of neighbouring spins in the Heisenberg chain.
+    
+    spinops : list of all the global spin operators.
+
+    Returns
+    -------
+    H0 : Hamiltonian of size 2^N x 2^N. The time-independent part of the total hamiltonian of the spin chain.
+
+    """
     #return the time independent part of the hamiltonian
     
     #create the hamiltonian
     H0 = np.zeros((2**N,2**N), dtype = np.complex128)
     
-    #iterate trough the spins
+    #iterate trough the spins expect the last one, which has no neighbours to the right
     for i in range(N-1):
         #add interaction energy to the Hamiltonian
-        H0 += - J * ( spinops[i,0,:,:] @ spinops[i+1,0,:,:] + spinops[i,1,:,:] @ spinops[i+1,1,:,:] + spinops[i,2,:,:] @ spinops[i+1,2,:,:] )
+        #interaction is the product of the spin operators for the neighbouring spins
+        H0 += - J * ( spinops[i,0,:,:] @ spinops[i+1,0,:,:] + 
+                      spinops[i,1,:,:] @ spinops[i+1,1,:,:] + 
+                      spinops[i,2,:,:] @ spinops[i+1,2,:,:] )
     
     #return the time independent part of the hamiltonian
     return H0
 
 def magn_field(h, w, t):
-    #returns the instantaneous value of the magnetic field
-    #h is the absolute value of the field
-    #w is the angular frequency of the field
-    #t is the time
+    """
+    Returns the instantaneous value of the magnetic field which is applied to the first spin of the chain.
+
+    Parameters
+    ----------
+    h : float, amplitude of the applied magnetic field.
+    
+    w : float, the frequency of the driving magnetic field.
+    
+    t : float, the time point in which the field is to be evaluated.
+
+    Returns
+    -------
+    bt : array of floats, the instantaneous value of the magnetic field.
+
+    """
+    #evaluate the components of the magnetic field
+    #the applied field implemented here is a field which rotates in the x-z plane
+    #this could be changed later on to a field which has arbitrarily direction
     
     bx = h * np.sin(w * t)
     by = 0
     bz = h * np.cos(w * t)
     
-    bt = np.array([bx,by,bz], dtype = np.complex128)
+    #make an array out of the components
+    bt = np.array([bx, by, bz], dtype = np.complex128)
     
     #return te vector of the magnetic field
     return bt
 
 def heis_ham_full(H0, spinops, h, w, t):
-    #return the full time dependent hamiltonian of the system
+    """
+    Construct the full time-dependent hamiltonian of the system. 
+
+    Parameters
+    ----------
+    H0 : Hamiltonian of size 2^N x 2^N. The time-independent part of the total hamiltonian of the spin chain.
+    
+    spinops : list of all the global spin operators.
+    
+    h : float, amplitude of the applied magnetic field.
+    
+    w : float, the frequency of the driving magnetic field.
+    
+    t : float, the time point in which the field is to be evaluated.
+
+    Returns
+    -------
+    H0 : Hamiltonian of size 2^N x 2^N. The full, time-dependent hamiltonian of the spin chain. 
+
+    """
 
     #get the value of the magnetic field
     bt = magn_field(h = h, w = w, t = t)
@@ -119,27 +209,64 @@ def heis_ham_full(H0, spinops, h, w, t):
     #add interaction with the magnetic field
     #H_magn = - ( bt_x sigma_x + bt_y sigma_y + bt_z sigma_z )
     #and the sigma operators now correspond to the spin operators of the first spin
-    H0 += -1 * ( bt[0] * spinops[0,0,:,:] + bt[1] * spinops[0,1,:,:] + bt[2] * spinops[0,2,:,:] ) 
+    H0 += -1 * ( bt[0] * spinops[0,0,:,:] + 
+                 bt[1] * spinops[0,1,:,:] + 
+                 bt[2] * spinops[0,2,:,:] ) 
     
     #return the full time dependent hamiltonian
     return H0
 
 def vected_comm(N, H):
+    """
+    Function that calculates the vectorized form of the commutator in the Lindblad equation.
+
+    Parameters
+    ----------
+    N : integer, the number of spins in the chain.
+    
+    H : Hamiltonian of size 2^N x 2^N. The full, time-dependent hamiltonian of the spin chain. 
+
+    Returns
+    -------
+    vected_comm : Hamiltonian of size 4^N x 4^N. The vectorized form of the total time-dependent hamiltonian.
+
+    """
     
     #now carry out the vectorization of the hamiltonian first
     ii = np.eye(2**N, dtype=np.complex128) #2^N x 2^N identity
 
     #do vectorization for the commutator of the hamiltonian
-    pre = np.kron(ii,H)
-    post = np.kron(H,ii)
+    pre = np.kron(ii, H) #first part of the commutator
+    post = np.kron(H, ii) #second part of the commutator
 
     #evaluate the commutator
-    vected_comm = -1.j*(pre - post)
-    #here we dont need to divide by hbar because it is already set to 1 I guess 
+    vected_comm = -1.j * (pre - post)
     
+    #return the vectorized commutator
     return vected_comm
 
 def relaxation_rates(Beta, gammat, esplit):
+    """
+    Calculate the relaxation rates with which the spin on the right is coupled to the environment.
+
+    TASK: FIND MORE MORE PHYSICAL DESCRITION FOR THE RELAXATION OF THE SPIN
+        
+    Parameters
+    ----------
+    Beta : float, inverse temperature. 
+    
+    gammat : float, general relaxation rate.
+    
+    esplit : float, energy difference between the the ground and excited states of this spin
+    question: in what sense? 
+
+    Returns
+    -------
+    gamma1 : float, downhill relaxation rate.
+    
+    gamma2 : float, uphill relaxation rate.
+
+    """
     
     #find the uphill and downhill relaxation rates
     if Beta == np.inf: #if the temperature is zero then we have only downhill relaxation rate
@@ -149,10 +276,35 @@ def relaxation_rates(Beta, gammat, esplit):
         gamma1 = gammat * (1 + 1 / (np.exp(esplit * Beta) - 1))
         gamma2 = gammat / (np.exp(esplit * Beta) - 1)
         
+    #return the relaxation rates
     return gamma1, gamma2
 
 def jump_operators(N, Beta, gammat, esplit):
-    #now the jump operator will be a downhill and uphill relaxation towards the y direction
+    """
+    Function that returns the jump operators that define the coupling with the environment.
+
+    Disclaimer: The current implementation of this function considers the effect of the environment
+    as a large magnetic moment which points in the y direction (away from the chain). 
+    Correspondingly the jump operators describe processes in which the spin jumps into the ground or excited
+    states of the sigma_y operator.
+        
+    Parameters
+    ----------
+    N : integer, the number of spins in the chain.
+    
+    Beta : float, inverse temperature. 
+    
+    gammat : float, general relaxation rate.
+    
+    esplit : float, energy difference between the the ground and excited states of this spin
+
+    Returns
+    -------
+    sp_y_z : 2^N x 2^N matrix, the operator that describes the downhill relaxation.
+    
+    sm_y_z : 2^N x 2^N matrix, the operator that describes the uphill relaxation.
+
+    """
     
     #get the relaxation rates
     gamma1, gamma2 = relaxation_rates(Beta = Beta, gammat = gammat, esplit = esplit)
@@ -164,9 +316,10 @@ def jump_operators(N, Beta, gammat, esplit):
     sy = np.matrix([ [0., -1.j],
                      [1.j, 0. ] ], dtype = np.complex128)
     
-    #get eigenvectors
+    #get the eigenvectors of the sigma_y operator as they are needed to construct the jump operators
     vals, vecs = np.linalg.eig(sy)
     
+    #construct the ladder operators for the sigma_y operator in the eigenbasis of sigma_y
     #S+ in the y eigenbasis looks like this
     sp_y = np.array([[0.,1.],
                      [0.,0.]], dtype = np.complex128)
@@ -175,23 +328,44 @@ def jump_operators(N, Beta, gammat, esplit):
     sm_y = np.array([[0.,0.],
                      [1.,0.]], dtype = np.complex128)
     
-    #but we need the vector in the Sz basis 
+    #now transform this matrix into the eigenbasis of sigma_z.
     #so need to do a basis transfomation
+    
     #this is the uphill jump operator
     sp_y_z = np.linalg.inv(vecs) @ (sp_y @ vecs) * np.sqrt(gamma2)
     
-    #the downhill jump operator is the conjugate transpose of this
+    #this is the downhill operator
     sm_y_z = np.linalg.inv(vecs) @ (sm_y @ vecs) * np.sqrt(gamma1)
     
-    #now we need to construct the two jump operators for the total spin chain
+    #these jump operators are only local, we need to construct the global spin operators
+    
     #for each spin to the left of the final spin on the right 
     for i in range(N-1):
         #add an identity to the operator from the left
         sp_y_z = np.kron(s0, sp_y_z)
         sm_y_z = np.kron(s0, sm_y_z)
-    return sp_y_z, sm_y_z
+    
+    #return the global jump operators
+    return sm_y_z, sp_y_z
 
 def vectorize_jumpoperator(N, jop):
+    """
+    Function that calculates the vectorized terms in the Lindblad equation which corresponds 
+    to one of the jump operators.
+
+    Parameters
+    ----------
+    N : integer, the number of spins in the chain.
+    
+    jop : matrix of size 2^N x 2^N, the global jump operator to be vectorized
+
+    Returns
+    -------
+    term1 : 4^N x 4^N matrix, the vectorized first term in the Lindblad equation.
+    
+    term2 : 4^N x 4^N matrix, the vectorized anticommutator in the Lindblad equation.
+
+    """
     #carry out the vectorization for a single jump operator
     
     ii = np.eye(2**N, dtype = np.complex128)
@@ -212,6 +386,30 @@ def vectorize_jumpoperator(N, jop):
     return term1, term2
 
 def vected_jops(N, Beta, gammat, esplit):
+    """
+    Function that calculates the jump operators and returns their vectorized form.
+
+    Parameters
+    ----------
+    N : integer, the number of spins in the chain.
+    
+    Beta : float, inverse temperature. 
+    
+    gammat : float, general relaxation rate.
+    
+    esplit : float, energy difference between the the ground and excited states of this spin.
+
+    Returns
+    -------
+    term11 : 4^N x 4^N matrix, the vectorized first term in the Lindblad equation corresponding to the downhill jump operator.
+    
+    term12 : 4^N x 4^N matrix, the vectorized anticommutator in the Lindblad equation corresponding to the downhill jump operator.
+    
+    term21 : 4^N x 4^N matrix, the vectorized first term in the Lindblad equation corresponding to the uphill jump operator.
+    
+    term22 : 4^N x 4^N matrix, the vectorized anticommutator in the Lindblad equation corresponding to the uphill jump operator.
+
+    """
     #vectorize the jump operators in the lindblad equation
     
     #create the jump operators
@@ -225,8 +423,36 @@ def vected_jops(N, Beta, gammat, esplit):
     #return the vectorized operators
     return term11, term12, term21, term22
 
-def liouvillians(N, J, h, gammat, esplit, w, Beta, dt, tsu):    
- 
+def liouvillians(N, J, h, gammat, esplit, w, Beta, dt, tsu):
+    """
+    Function that returns a list of vectorized liouvillian operators corresponding to each time step
+    for a single period of the drive.
+
+    Parameters
+    ----------
+    N : integer, the number of spins in the chain.
+    
+    J : float, coupling of neighbouring spins in the Heisenberg chain.
+    
+    h : float, amplitude of the applied magnetic field.
+    
+    gammat : float, general relaxation rate.
+    
+    esplit : float, energy difference between the the ground and excited states of this spin.
+    
+    w : float, the frequency of the driving magnetic field.
+    
+    Beta : float, inverse temperature. 
+    
+    dt :  float, difference between sequential time steps.
+    
+    tsu : list of floats, the time points during a single period of the drive- That is, tsu[0] = 0, tsu[-1] = T-dt. 
+
+    Returns
+    -------
+    unitary : list of 4^N x 4^N matrices, the liouvillian operators corresponding to each time step in tsu.
+
+    """
     #create a container for the exponentialized operators
     unitary = np.zeros(( 4**N, 4**N, len(tsu) ), dtype=np.complex128)
     
@@ -256,10 +482,31 @@ def liouvillians(N, J, h, gammat, esplit, w, Beta, dt, tsu):
         
         #add the exponentialized operator to the container
         unitary[:,:,idx] = uu
-
+        
+    #return the exponentialized vectorized operators
     return unitary
 
 def time_evolve(N, psi0, unitary, ts, tsu):
+    """
+    Function that carries out the time evolution of the initial psi0 state with the unitary time evolution operators.
+
+    Parameters
+    ----------
+    N : integer, the number of spins in the chain.
+    
+    psi0 : list of floats, the vectorized density matrix corresponding to the initial state of the system.
+    
+    unitary : list of 4^N x 4^N matrices, the liouvillian operators corresponding to each time step in tsu.
+    
+    ts : list of floats, the time points during the whole measurement.
+    
+    tsu : list of floats, the time points during a single period of the drive- That is, tsu[0] = 0, tsu[-1] = T-dt.
+
+    Returns
+    -------
+    rhot : list of 2^N x 2^N matrices, the time dependent density matrix corresonding to each time point in the ts list.
+
+    """
     #set psi to the initial state
     psi = psi0.copy()
     
@@ -286,6 +533,19 @@ def time_evolve(N, psi0, unitary, ts, tsu):
     return rhot
 
 def transform_state(psi):
+    """
+    Function that takes the row vector of the psi state and then creates the corresponding density matrix and 
+    the vectorized density matrix.
+
+    Parameters
+    ----------
+    psi : list of floats, the row vector corresponding to the psi state.
+
+    Returns
+    -------
+    vected_rho : list of floats, the vectorized form of the density matrix corresponding to state psi.
+
+    """
     #create the density matrix out of the state psi and then create the vectorized density matrix
     #psi is expected to be a usual numpy array
     
@@ -305,6 +565,23 @@ def transform_state(psi):
     return vected_rho
 
 def lindsolve(params):
+    """
+    Function that carries out the simulation of the spin chain driven by a magnetic field and coupled
+    to the environment.
+
+    TASK: MAKE THE FUNCTION ABLE TO TAKE THE INITIAL STATE OF THE SPINS AS A PARAMETER.
+    
+    Parameters
+    ----------
+    params : list of parameters that describes the characteristics of the measurement. These are N, J, h, gammat,
+    esplit, w, Beta, dtnum, tintnum. Out of these, only dtnum was not introduced so far. 
+        dtnum : integer, needed to define the infinitesimal time step of the simulation. dt is defined as T/dtnum. 
+
+    Returns
+    -------
+    rhot : list of 2^N x 2^N matrices, the time dependent density matrix obtained during the simulation.
+
+    """
     #unpack the parameters of the function
     N, J, h, gammat, esplit, w, Beta, dtnum, tintnum = params
     
@@ -326,9 +603,10 @@ def lindsolve(params):
     #time points in a single period
     tsu = np.arange(0, T, dt, dtype = np.float64)
     
+    #the initial state is now specified by all spins pointing upwards
     #create an initial state for the system
-    psi = np.array([1,0])
     psi_up = np.array([1,0])
+    psi = np.array([1,0])
     #create the initial psi vector
     for i in range(N-1):
         psi = np.kron(psi, psi_up)
@@ -340,18 +618,31 @@ def lindsolve(params):
     unitary = liouvillians(N = N, J = J, h = h, gammat = gammat, esplit = esplit, w = w, Beta = Beta, dt = dt, tsu = tsu)
 
     #carry out the time evolution
-    #for both of the possible initial states
-    #rhogt and rhoet are the time dependent density matrices in 2x2 form 
     rhot = time_evolve(N = N, psi0 = vr_initial, unitary = unitary, ts = ts, tsu = tsu)
 
-    #Using the time dependent density matrix any quantity can be calculated
-    #now let's calculate the magnetization 
-
-    
-    #return the useful quantites
+    #return the time dependent density matrix
     return rhot
 
 def magnetization(N, which, direction, rhot):
+    """
+    Function that calculates the local magnetization of the sample as a function of time.
+
+    Parameters
+    ----------
+    N : integer, the number of spins in the chain.
+    
+    which : integer, the index of the spin for which the magnetization is to be determined. 
+    
+    direction : string, the direction in which the magnetization is to be determined. 
+    Possible values are 'x'. 'y' and 'z'.
+    
+    rhot : list of 2^N x 2^N matrices, the time dependent density matrix obtained during the simulation.
+
+    Returns
+    -------
+    magn : list of floats, the time-dependent local magnetization of the sample. 
+
+    """
     
     #sigma0
     s0 = np.eye(2, dtype = np.complex128)
@@ -381,7 +672,7 @@ def magnetization(N, which, direction, rhot):
 
     #and take kronecker product (from the right) for every spin
     #which is on the right of the spin
-    for j in range(which+1,3):
+    for j in range(which+1,N):
         local_magn = np.kron(local_magn, s0)
         
     #now the local_magn object is an operator which acts on the whole chain and measures the direction
