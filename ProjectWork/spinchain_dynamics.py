@@ -82,6 +82,9 @@ def spin_operators(N):
     sz = np.matrix([ [1., 0.], 
                      [0., -1.] ], dtype = np.complex128)
     
+    #directions 
+    dirs = [sx,sy,sz]
+    
     #create a container for the spin operators
     #which are of size 2^N x 2^N
     #we need a container for all the spins and for each spin we have 3 different operators.
@@ -90,30 +93,23 @@ def spin_operators(N):
     #create the tensor product operators that act on the spins in the chain
     #for every spin in the chain
     for i in range(N):
-        #copy the 2x2 pauli matrices
-        Ox = sx.copy()
-        Oy = sy.copy()
-        Oz = sz.copy()
-        
-        #take the kronecker product with the identity for every spin
-        #which is on the left side of the spin
-        for j in range(i):
-            Ox = np.kron(s0, Ox)
-            Oy = np.kron(s0, Oy)
-            Oz = np.kron(s0, Oz)
-        
-        #and take kronecker product (from the right) for every spin
-        #which is on the right of the spin
-        for j in range(i+1,N):
-            Ox = np.kron(Ox, s0)
-            Oy = np.kron(Oy, s0)
-            Oz = np.kron(Oz, s0)            
-        
-        #now add the operators to the container
-        spin_ops[i,0,:,:] = Ox
-        spin_ops[i,1,:,:] = Oy
-        spin_ops[i,2,:,:] = Oz
-        
+        for k in range(3):
+            #take the k-th Pauli matrix
+            Op = dirs[k].copy()
+            
+            #take the kronecker product with the identity for every spin
+            #which is on the left side of the spin
+            for j in range(i):
+                Op = np.kron(s0, Op)
+                
+            #and take kronecker product from the right for every spin
+            #which is on the right of the spin
+            for j in range(i + 1, N):
+                Op = np.kron(Op,s0)
+                
+            #now add the operators to the container
+            spin_ops[i,k,:,:] = Op
+            
     #return the list of global spin operators
     return spin_ops
 
@@ -272,6 +268,7 @@ def relaxation_rates(Beta, gammat, esplit):
     if Beta == np.inf: #if the temperature is zero then we have only downhill relaxation rate
         gamma1 = gammat
         gamma2 = 0
+        
     else: #otherwise use these rates
         gamma1 = gammat * (1 + 1 / (np.exp(esplit * Beta) - 1))
         gamma2 = gammat / (np.exp(esplit * Beta) - 1)
@@ -346,7 +343,7 @@ def jump_operators(N, Beta, gammat, esplit):
         sm_y_z = np.kron(s0, sm_y_z)
     
     #return the global jump operators
-    return sm_y_z, sp_y_z
+    return sp_y_z, sm_y_z
 
 def vectorize_jumpoperator(N, jop):
     """
@@ -426,7 +423,7 @@ def vected_jops(N, Beta, gammat, esplit):
 def liouvillians(N, J, h, gammat, esplit, w, Beta, dt, tsu):
     """
     Function that returns a list of vectorized liouvillian operators corresponding to each time step
-    for a single period of the drive.
+    for a single period of the drive and the spinoperators
 
     Parameters
     ----------
@@ -452,6 +449,8 @@ def liouvillians(N, J, h, gammat, esplit, w, Beta, dt, tsu):
     -------
     unitary : list of 4^N x 4^N matrices, the liouvillian operators corresponding to each time step in tsu.
 
+    spinops : list of 2^N x 2^N matrices, the global spin operators that act on the chain.
+    
     """
     #create a container for the exponentialized operators
     unitary = np.zeros(( 4**N, 4**N, len(tsu) ), dtype=np.complex128)
@@ -484,11 +483,32 @@ def liouvillians(N, J, h, gammat, esplit, w, Beta, dt, tsu):
         unitary[:,:,idx] = uu
         
     #return the exponentialized vectorized operators
-    return unitary
+    return unitary, spinops
 
-def time_evolve(N, psi0, unitary, ts, tsu):
+def get_magns(psim, spinops, N):
+    
+    #container for the instantaneous magnetizations
+    inst_magns = np.zeros(N*3).reshape((N,3))
+
+    #for each spin
+    for i in range(N):
+        
+        #for each direction
+        for k in range(3):
+            
+            #get the spin operator
+            spinop = spinops[i,k]
+            
+            #calculate the magnetization of spin i in direction k and add it to the container
+            inst_magns[i,k] = np.real(np.trace(psim @ spinop))
+    
+    #return the magnetizations
+    return inst_magns
+            
+def time_evolve(N, psi0, unitary, ts, tsu, spinops):
     """
-    Function that carries out the time evolution of the initial psi0 state with the unitary time evolution operators.
+    Function that carries out the time evolution of the initial psi0 state with the unitary time evolution operators and calculates the magnetization
+    of the spins.
 
     Parameters
     ----------
@@ -501,36 +521,43 @@ def time_evolve(N, psi0, unitary, ts, tsu):
     ts : list of floats, the time points during the whole measurement.
     
     tsu : list of floats, the time points during a single period of the drive- That is, tsu[0] = 0, tsu[-1] = T-dt.
+    
+    spinops : list of 2^N x 2^N matrices, the global spin operators that act on the chain.
 
     Returns
     -------
-    rhot : list of 2^N x 2^N matrices, the time dependent density matrix corresonding to each time point in the ts list.
+    magns : list of len(ts) x N x 3, the time dependent magnetization of the sample.
 
     """
     #set psi to the initial state
     psi = psi0.copy()
     
-    #collect the time dependent density matrix here
-    rhot = np.zeros( (len(ts), 2**N, 2**N) , dtype = np.complex128)
-    
     #density matrix for the initial state
     psim = psi.T.reshape((2**N,2**N))
-    
-    #append it to the density matrix collector
-    rhot[0,:,:] = psim
 
+    #container for the magnetizations
+    magns = np.zeros(N * 3 * len(ts)).reshape(( len(ts), N, 3 ))
+
+    #add the magnetization of the initial state
+    magns[0, :, :] = get_magns(psim = psim, spinops = spinops, N = N)
+    
     #carry out the time evolution till the final point
     for idx, t in enumerate(ts[ : -1 ]):
-        mat = np.ascontiguousarray(unitary[ : , : , idx%len(tsu) ]) #take the liouvillian at time point t
         
-        psi = mat @ psi #time evolve with dt (calculate psi(t+dt))
+        #take the liouvillian at time point t
+        mat = np.ascontiguousarray(unitary[ : , : , idx%len(tsu) ]) 
         
-        #construct the density matrix of the state and append the new density matrix to the list
-        psim=psi.T.reshape((2**N,2**N))
-        rhot[idx+1,:,:] = psim
+        #time evolve with dt (calculate psi(t+dt))
+        psi = mat @ psi 
+        
+        #construct the density matrix of the state and calculate the magnetizations
+        psim = psi.T.reshape( ( 2**N , 2**N ) )
+        
+        #and calculate the magnetizations and also append it to the container
+        magns[idx+1, :, :] = get_magns(psim = psim, spinops = spinops, N = N)
     
-    #return the time dependent density matrices as 2x2 matrices
-    return rhot
+    #return the time dependent magnetization of the sample
+    return magns
 
 def transform_state(psi):
     """
@@ -614,76 +641,11 @@ def lindsolve(params):
     #create the vectorized density matrices
     vr_initial = transform_state(psi)
     
-    #find the time evolution superoperators
-    unitary = liouvillians(N = N, J = J, h = h, gammat = gammat, esplit = esplit, w = w, Beta = Beta, dt = dt, tsu = tsu)
+    #find the time evolution superoperators and also the spinoperators
+    unitary, spinops = liouvillians(N = N, J = J, h = h, gammat = gammat, esplit = esplit, w = w, Beta = Beta, dt = dt, tsu = tsu)
 
-    #carry out the time evolution
-    rhot = time_evolve(N = N, psi0 = vr_initial, unitary = unitary, ts = ts, tsu = tsu)
+    #carry out the time evolution and obtain the magnetizations
+    magns = time_evolve(N = N, psi0 = vr_initial, unitary = unitary, ts = ts, tsu = tsu, spinops = spinops)
 
-    #return the time dependent density matrix
-    return rhot
-
-def magnetization(N, which, direction, rhot):
-    """
-    Function that calculates the local magnetization of the sample as a function of time.
-
-    Parameters
-    ----------
-    N : integer, the number of spins in the chain.
-    
-    which : integer, the index of the spin for which the magnetization is to be determined. 
-    
-    direction : string, the direction in which the magnetization is to be determined. 
-    Possible values are 'x'. 'y' and 'z'.
-    
-    rhot : list of 2^N x 2^N matrices, the time dependent density matrix obtained during the simulation.
-
-    Returns
-    -------
-    magn : list of floats, the time-dependent local magnetization of the sample. 
-
-    """
-    
-    #sigma0
-    s0 = np.eye(2, dtype = np.complex128)
-    
-    #create sigma matrices
-    sx = np.matrix([ [0., 1.], 
-                     [1., 0.] ], dtype = np.complex128)
-    
-    sy = np.matrix([ [0., -1.j],
-                     [1.j, 0.] ], dtype = np.complex128)
-    
-    sz = np.matrix([ [1., 0.], 
-                     [0., -1.] ], dtype = np.complex128)
-    
-    #create local magnetism operator
-    if direction == 'x': 
-        local_magn = sx
-    elif direction == 'y':
-        local_magn = sy
-    elif direction == 'z':
-        local_magn = sz
-
-    #take the kronecker product with the identity for every spin
-    #which is on the left side of the spin
-    for j in range(which):
-        local_magn = np.kron(s0, local_magn)
-
-    #and take kronecker product (from the right) for every spin
-    #which is on the right of the spin
-    for j in range(which+1,N):
-        local_magn = np.kron(local_magn, s0)
-        
-    #now the local_magn object is an operator which acts on the whole chain and measures the direction
-    #of the spin which is the "which"-th in the chain
-    #i.e. if which = 1, then local_magn measures the direction of the spin indexed by 1. 
-    
-    #contain the magnetization
-    magn = np.zeros(len(rhot), dtype = np.float64)
-    
-    for idx,rho in enumerate(rhot):
-        magn[idx] = np.real(np.trace(rho @ local_magn))
-    
-    #now return the magnetization
-    return magn
+    #return the time dependent magnetization
+    return magns
