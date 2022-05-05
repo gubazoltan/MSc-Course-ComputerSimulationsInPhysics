@@ -1,0 +1,7 @@
+Short documentation for the Dijkstra algorithm.
+
+The code utilizes the networkx package to manipulate create and work with graphs, namely the Barabási-Albert graph. The main function of the code is the Dijkstra_algorithm function which takes a graph, a source and the number of nodes in the graph and calculates the distance of each node from the source 
+in the graph. Then the procedure is repeated for each different sources and the distances are averaged for the different source degrees. To overcome statistical
+fluctuations we generate many different graphs and find the averages over them. 
+
+For further information see the documented code.
