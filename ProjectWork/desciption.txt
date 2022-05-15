@@ -1,0 +1,69 @@
+This is a short description and documentation for the project work. 
+
+Name of the project: 
+    Dynamics of small open quantum systems
+main contributor: 
+    Zoltán Guba
+
+Description:
+    "The theory of open quantum systems is the backbone of nearly all modern research in quantum mechanics and its applications.
+    The reason is simple: the idealization of an isolated quantum system obeying perfectly unitary quantum dynamics is just that:
+    an idealization. In reality every system is open, meaning that it is coupled to an external environment. Sometimes these open
+    system effects are small, but they can almost never be neglected. This is particularly relevant in the field of quantum information
+    processing, where the existence of a quantum advantage over classical information processing is often derived first from the
+    idealized, closed system perspective, and must then be re-scrutinized in the realistic, open system setting." 
+    source: https://arxiv.org/abs/1902.00967, Daniel A. Lidar
+
+    The aim of this project is to numerically simulate the dynamics of open quantum systems using simple ideas and methods. 
+    That is, a single electron double quantum dot (DQD) and a short spin chain is under investigation. For the DQD, the aim is
+    to recover features shown in https://arxiv.org/abs/1812.06056, namely the features of Fig2a will be obtained during the investigation.
+    Clearly, we will also discover differences as the referenced publication uses only the steady-state solution of the dynamics, which 
+    already takes away the possibility to differentiate the ground and excited states of the system. 
+    The investigation of the spin chain is purely led by curiosity: how efficient the method used for the DQD is to simulate spin chains 
+    where the Hilbert space is much larger. Also we discover that the longest spin chain that can be simulated has length N=5, which clearly
+    shows the need for better numerical methods. There are already methods which make us able to simulate quantum systems more efficiently, 
+    but the aim here is to keep things as simple as possible. 
+
+    Single electron DQD: The physical system is described in https://arxiv.org/abs/1812.06056. That is, a single-electron DQD is put in 
+    a resonant RC circuit. This circuit is probed with an AC signal for which the magnitute and the phase shift of the reflected signal is 
+    measured. With this the complex impedance of the circuit can be measured. Now if the DQD is put in this circuit, then during the probing 
+    the electron moves according to the AC signal and generates a small capacitance and resistance. This small capacitance and resistance then 
+    changes the complex impedance of the system. With this method the state of the electron can be measured in principle, as the capacitance and 
+    resistance generated during the probing depends on the state of the electron. 
+    The result of the simulation is the effective resistance of the DQD (also referred to as the Sisyphus resistance).
+    
+    Spin chain: The physical system is a simple one dimensional Heisenberg chain with the small twist, that only the left-most spin is affected by
+    a time-dependent magnetic field and only the right-most spin is coupled to the environment via a large magnetic moment pointing in the y direction.
+    At the beginning of the numerical simulation the spins point in the z direction. Then the magnetic is turned on which affects only the left-most spin.
+    Then the system is left to time evolve and reach its thermal steady-state.
+    The result of the simulation is the time dependent magnetization of the individual spins.
+    By investigating the magnetizations under different circumstances (T=0, no magnetic field, no coupling, etc) the plots can be used to teach students
+    about the effect of turning on and off different parameters in the systems. For example: what is the effect of coupling and turning on the temperature.
+    
+Results:
+    For the DQD I show how the full dynamics effect the effective capacitance of the DQD shown in Fig2a of Esterli et al.. For the spin chain I carry out
+    numerical simulations with different parameter regimes (no magnetic field, T=0) to show how turning on different physics affects the magnetizations.
+    The former shows interesting contribution to an already published paper, while the latter is rather pedagogical.
+    
+Now I present the main method used for the numerical simulations. That is, I describe the main concept of the method which was used for both systems
+(DQD and spin chain).
+
+Method:
+    1. construct the time-dependent hamiltonian: for the DQD this is just a 2x2 hermitian matrix that describes the system as a function of time. 
+        For the spin chain, the dimensionality depends on the number of spins. For N=3 the Hamiltonian is a 2^3 x 2^3 hermitian matrix.
+    2. construct the jump operators: the jump operators are non-hermitian operators that describe the coupling of the system to the environment.
+        For example, given a single spin, the jump operator describing the downhill relaxation of the spin is simply the annihilation operator S-. 
+        For the DQD the ground and excited states are calculated for each time instance and then the jump operators corresponding to the downhill and 
+        uphill relaxation are constructed as |ground><excited| and |excited><ground|.
+    3. construct the vectorized form of the Lindblad equation: the Lindblad equation involves rather complicated stucture of the density operator
+        and the Hamiltonian and the jump operators, but it can be cast into a form where there is an operator acting on the density matrix. This operator
+        is usually referred to as the Lindbladian superoperator (as it acts on an operator). 
+        For the vectorization see the wikipedia page: https://en.wikipedia.org/wiki/Vectorization_(mathematics) .
+    4. exponentialized the superoperator: to obtain the evolution of the density matrix the Euler method is used with the trick that we also exponentialized
+        operator. With this we can conserve the trace of the density operator and there is no need for renormalization.
+    5. calculate physical observables from the density operator: with the time-dependent density matrix other physical quantites can be measured by using 
+        <O> = Trace(rho * O) expression. For the DQD the electric charge of the right dot is measured as a function of time while for the spin chain the 
+        magnetization is the measured quantity.
+        
+This method is clearly not efficient as the Lindbladian superoperator scales with 4^N x 4^N. Because of that this idea can be utilizied only for systems
+with a small Hilbert space. Nevertheless, the method is simple as requires only partial knowledge about the phyisics of open quantum systems. 
